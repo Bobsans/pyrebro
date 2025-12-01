@@ -1,0 +1,3 @@
+# Pherebro
+
+Basic Redis manager
