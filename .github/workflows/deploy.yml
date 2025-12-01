@@ -1,0 +1,73 @@
+name: Deploy
+
+concurrency:
+  group: production
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    env:
+      TMPDIR: /tmp/pyrebro
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x.x
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install App dependencies
+        run: cd app && npm ci
+
+      - name: Build App
+        run: |
+          cd app
+          sed -i -- 's|process.env.API_SERVER_URL.*$|JSON.stringify("${{ vars.API_SERVER_URL }}"),|g' vite.config.ts
+          npm run build
+
+      - name: Collect artifact
+        run: |
+          mkdir -p build/web
+          rm -r api/.gitignore
+          cp -r app/dist/. build/web/
+          cp -r api/. build/
+
+      - name: Upload artifact
+        uses: marcodallasanta/ssh-scp-deploy@v1.2.0
+        with:
+          local: build/*
+          remote: "${{ env.TMPDIR }}"
+          host: ${{ secrets.SSH_HOST }}
+          user: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          pre_upload: rm -rf "${{ env.TMPDIR }}"
+          ssh_options: -o StrictHostKeyChecking=no
+
+      - name: Post deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            OUT="${{ vars.SSH_PATH }}" OUT=${OUT%/}
+            cp "$OUT/config.yaml" "${{ env.TMPDIR }}"
+            rm -rf "$OUT"
+            mv "${{ env.TMPDIR }}" "$OUT"
+            cd "$OUT"
+            python3.14 -m venv .venv
+            source .venv/bin/activate
+            pip install -r requirements.txt
+            ${{ vars.POST_UPLOAD_COMMAND }}
