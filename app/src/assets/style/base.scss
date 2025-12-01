@@ -1,0 +1,31 @@
+@use 'vars';
+
+:root {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: vars.$font-size;
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+
+    &-thumb {
+      background: vars.$bg-secondary;
+    }
+  }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+  line-height: normal;
+}
+
+body {
+  min-height: 100vh;
+  background: vars.$bg-primary;
+  color: vars.$white;
+  font-family: vars.$font-family;
+}

@@ -1,0 +1,85 @@
+@use "vars";
+
+@font-face {
+  font-family: "Ubuntu Mono";
+  src: local("Ubuntu Mono Bold"), local("UbuntuMono-Bold"), url("#{vars.$fonts-path}/ubuntumono-bold.woff2") format("woff2");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Ubuntu Mono";
+  src: local("Ubuntu Mono Bold Italic"), local("UbuntuMono-BoldItalic"), url("#{vars.$fonts-path}/ubuntumono-bolditalic.woff2") format("woff2");
+  font-weight: bold;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Ubuntu Mono";
+  src: local("Ubuntu Mono Italic"), local("UbuntuMono-Italic"), url("#{vars.$fonts-path}/ubuntumono-italic.woff2") format("woff2");
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Ubuntu Mono";
+  src: local("Ubuntu Mono"), local("UbuntuMono-Regular"), url("#{vars.$fonts-path}/ubuntumono-regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Ubuntu";
+  src: local("Ubuntu Bold"), local("Ubuntu-Bold"), url("#{vars.$fonts-path}/ubuntu-bold.woff2") format("woff2");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Ubuntu";
+  src: local("Ubuntu Bold Italic"), local("Ubuntu-BoldItalic"), url("#{vars.$fonts-path}/ubuntu-bolditalic.woff2") format("woff2");
+  font-weight: bold;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Ubuntu";
+  src: local("Ubuntu Italic"), local("Ubuntu-Italic"), url("#{vars.$fonts-path}/ubuntu-italic.woff2") format("woff2");
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Ubuntu";
+  src: local("Ubuntu Light"), local("Ubuntu-Light"), url("#{vars.$fonts-path}/ubuntu-light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Ubuntu";
+  src: local("Ubuntu Light Italic"), local("Ubuntu-LightItalic"), url("#{vars.$fonts-path}/ubuntu-lightitalic.woff2") format("woff2");
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Ubuntu";
+  src: local("Ubuntu Medium"), local("Ubuntu-Medium"), url("#{vars.$fonts-path}/ubuntu-medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Ubuntu";
+  src: local("Ubuntu Medium Italic"), local("Ubuntu-MediumItalic"), url("#{vars.$fonts-path}/ubuntu-mediumitalic.woff2") format("woff2");
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Ubuntu";
+  src: local("Ubuntu Regular"), local("Ubuntu-Regular"), url("#{vars.$fonts-path}/ubuntu-regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+}

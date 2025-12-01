@@ -1,0 +1,78 @@
+@use "sass:color";
+@use "sass:math";
+@use "vars";
+@use "fonts";
+@use "base";
+
+header {
+  padding: vars.$padding;
+  border-bottom: vars.$default-border;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  h1 {
+    margin: 0;
+    padding-right: vars.$padding * 2;
+  }
+}
+
+main {
+  padding: vars.$padding;
+}
+
+
+a {
+  color: vars.$link;
+  text-decoration: none;
+
+  &:hover {
+    color: color.adjust(vars.$link, $lightness: 5%);
+  }
+}
+
+button, .button {
+  padding: vars.$padding;
+  background: vars.$bg-primary;
+  border: vars.$default-border;
+  cursor: pointer;
+  color: vars.$white;
+}
+
+hr {
+  height: 0;
+  border: none;
+  border-bottom: vars.$default-border;
+}
+
+h3, h4, h5 {
+  margin: 0;
+  font-weight: normal;
+}
+
+
+/* CUSTOM */
+
+.toast {
+  position: fixed;
+  right: vars.$padding * 2;
+  top: vars.$padding * 2;
+  background: vars.$bg-secondary;
+  padding: vars.$padding * 2;
+  max-width: 300px;
+  box-shadow: vars.$default-shadow;
+  transition: vars.$default-transition;
+  opacity: 0;
+  visibility: hidden;
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

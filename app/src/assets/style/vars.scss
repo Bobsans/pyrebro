@@ -1,0 +1,30 @@
+/* --== PATHS ==-- */
+
+$fonts-path:                "fonts";
+
+/* --== COLORS ==-- */
+
+$white:                     #FFFFFF;
+$black:                     #000000;
+
+$bg-primary:                #1B2132;
+$bg-secondary:              #2D3547;
+
+$link:                      #11930C;
+
+
+/* --== TYPO ==-- */
+
+$font-family:               "Ubuntu";
+$font-family-monospaced:    "Ubuntu Mono";
+
+$font-size:                 14px;
+
+/* --== SIZES AND PADDINGS ==-- */
+
+$padding:                   0.5rem;
+
+/* --== DEFAULTS ==-- */
+$default-border:            1px solid $bg-secondary;
+$default-transition:        0.3s ease-in-out;
+$default-shadow:            2px 2px 5px rgba($black, 0.5);

@@ -1,0 +1,41 @@
+{
+  "name": "pyrebro",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "run-p type-check \"build-only {@}\" --",
+    "preview": "vite preview",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --build",
+    "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
+    "lint:eslint": "eslint . --fix --cache",
+    "lint": "run-s lint:*"
+  },
+  "dependencies": {
+    "vue": "3.5.25",
+    "vue-router": "4.6.3"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "24.0.3",
+    "@types/node": "24.10.1",
+    "@vitejs/plugin-vue": "6.0.2",
+    "@vue/eslint-config-typescript": "14.6.0",
+    "@vue/tsconfig": "0.8.1",
+    "eslint": "9.39.1",
+    "eslint-plugin-oxlint": "1.30.0",
+    "eslint-plugin-vue": "10.6.2",
+    "jiti": "2.6.1",
+    "npm-run-all2": "8.0.4",
+    "oxlint": "1.30.0",
+    "sass": "1.94.2",
+    "typescript": "5.9.3",
+    "vite": "npm:rolldown-vite@latest",
+    "vite-plugin-vue-devtools": "8.0.5",
+    "vue-tsc": "3.1.5"
+  }
+}
