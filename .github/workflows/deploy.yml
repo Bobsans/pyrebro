@@ -52,7 +52,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           user: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          #pre_upload: rm -rf "${{ env.TMPDIR }}"
+          pre_upload: rm -rf "${{ env.TMPDIR }}"
           ssh_options: -o StrictHostKeyChecking=no
 
       - name: Post deploy
