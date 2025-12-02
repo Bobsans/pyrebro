@@ -45,15 +45,14 @@ jobs:
           cp -r api/. build/
 
       - name: Upload artifact
-        uses: marcodallasanta/ssh-scp-deploy@v1.2.0
+        uses: appleboy/scp-action@v1
         with:
-          local: build/*
-          remote: "${{ env.TMPDIR }}"
           host: ${{ secrets.SSH_HOST }}
-          user: ${{ secrets.SSH_USER }}
+          username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          pre_upload: rm -rf "${{ env.TMPDIR }}"
-          ssh_options: -o StrictHostKeyChecking=no
+          source: build/*
+          target: "${{ env.TMPDIR }}"
+          rm: true
 
       - name: Post deploy
         uses: appleboy/ssh-action@v1
