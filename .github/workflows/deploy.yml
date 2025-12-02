@@ -51,7 +51,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: build/*
-          target: "${{ env.TMPDIR }}/*"
+          target: "${{ env.TMPDIR }}"
           rm: true
 
       - name: Post deploy
@@ -62,9 +62,9 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             OUT="${{ vars.SSH_PATH }}" OUT=${OUT%/}
-            cp "$OUT/config.yaml" "${{ env.TMPDIR }}"
+            cp "$OUT/config.yaml" "${{ env.TMPDIR }}/build"
             rm -rf "$OUT"
-            mv "${{ env.TMPDIR }}" "$OUT"
+            mv "${{ env.TMPDIR }}/build" "$OUT"
             cd "$OUT"
             python3.14 -m venv .venv
             source .venv/bin/activate
