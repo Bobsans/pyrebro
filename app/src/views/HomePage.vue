@@ -40,12 +40,12 @@
   import { computed, reactive, watch } from "vue";
   import { store } from "@/store";
   import { useApi } from "@/uses/api";
-  import type { Entry } from "@/types";
+  import type { RedisEntry } from "@/types";
 
   const api = useApi();
 
   const state = reactive({
-    items: [] as Entry[],
+    items: [] as RedisEntry[],
     selected: [] as string[],
     pattern: "*",
     sort: "key:asc"
@@ -62,7 +62,7 @@
     }
   });
 
-  const changeOrdering = (field: keyof Entry) => {
+  const changeOrdering = (field: keyof RedisEntry) => {
     if (state.sort.startsWith(`${field}:`)) {
       state.sort = `${field}:${state.sort.split(":")[1] === "asc" ? "desc" : "asc"}`;
     } else {
@@ -72,7 +72,7 @@
     load();
   };
 
-  const getOrderingClass = (field: keyof Entry) => ({
+  const getOrderingClass = (field: keyof RedisEntry) => ({
     "asc": state.sort === `${field}:asc`,
     "desc": state.sort === `${field}:desc`
   });

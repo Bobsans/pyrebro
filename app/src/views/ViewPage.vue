@@ -1,6 +1,6 @@
 <template>
   <main class="view-page">
-    <div v-if="state.type === 'string'">{{ state.value }}</div>
+    <div v-if="state.type === 'string'">{{ state.data }}</div>
     <table v-else-if="state.type === 'list' || state.type === 'set' || state.type === 'zset'">
       <thead>
         <tr>
@@ -8,7 +8,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(entry, key) in state.value" :key="key">
+        <tr v-for="(entry, key) in state.data" :key="key">
           <td>{{ entry }}</td>
         </tr>
       </tbody>
@@ -21,12 +21,13 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(entry, key) in state.value" :key="key">
+        <tr v-for="(entry, key) in state.data" :key="key">
           <td style="width: 50%;">{{ key }}</td>
           <td style="width: 50%;">{{ entry }}</td>
         </tr>
       </tbody>
     </table>
+    <div v-if="state.size">Shown {{ loadedItemsCount }} of {{ state.size }} records</div>
   </main>
 </template>
 
@@ -35,15 +36,24 @@
   import { store } from "@/store.ts";
   import { useApi } from "@/uses/api.ts";
   import { useRoute } from "vue-router";
+  import type { RedisEntryData } from "@/types.ts";
 
   const api = useApi();
   const route = useRoute();
 
   const key = computed(() => route.params.key as string);
 
-  const state = reactive({
+  const state = reactive<RedisEntryData>({
     type: null! as string,
-    value: null!
+    size: 0,
+    data: null!
+  });
+
+  const loadedItemsCount = computed(() => {
+    if (state.data) {
+      return Array.isArray(state.data) ? state.data.length : typeof state.data === "object" ? Object.keys(state.data as Record<any, any>).length : 0;
+    }
+    return 0;
   });
 
   onMounted(() => {

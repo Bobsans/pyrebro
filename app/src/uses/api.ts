@@ -1,4 +1,4 @@
-import type { Entry } from "@/types";
+import type { RedisEntry, RedisEntryData, RedisServerInfo } from "@/types";
 
 export const API_SERVER_URL = import.meta.env.API_SERVER_URL;
 
@@ -16,11 +16,11 @@ export const useApi = () => {
   };
 
   const getServers = () => request<string[]>("get", "/servers");
-  const getServerInfo = (server: string) => request<string[]>("get", `/server/info?server=${server}`);
+  const getServerInfo = (server: string) => request<RedisServerInfo>("get", `/server/info?server=${server}`);
   const getDatabases = (server: string) => request<string[]>("get", `/server/databases?server=${server}`);
-  const getEntries = (server: string, database: number, pattern: string, sort: string) => request<Entry[]>("get", `/server/entries?server=${server}&database=${database}&pattern=${pattern}&sort=${sort}`);
-  const getData = (server: string, database: number, key: string) => request<any>("get", `/server/entry?server=${server}&database=${database}&key=${key}`);
-  const deleteKeys = (server: string, database: number, keys: string[]) => request("delete", `/server/entries?server=${server}&database=${database}`, {
+  const getEntries = (server: string, database: number, pattern: string, sort: string) => request<RedisEntry[]>("get", `/server/entries?server=${server}&database=${database}&pattern=${pattern}&sort=${sort}`);
+  const getData = (server: string, database: number, key: string) => request<RedisEntryData>("get", `/server/entry?server=${server}&database=${database}&key=${key}`);
+  const deleteKeys = (server: string, database: number, keys: string[]) => request<boolean>("delete", `/server/entries?server=${server}&database=${database}`, {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(keys)
   });

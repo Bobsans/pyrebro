@@ -22,12 +22,13 @@
   import { onMounted, reactive } from "vue";
   import { store } from "@/store.ts";
   import { useApi } from "@/uses/api.ts";
+  import type { RedisServerInfo } from "@/types.ts";
 
   const api = useApi();
 
-  const state = reactive({
-    last_save: 0,
-    info: {} as Record<string, Record<string, string | number>>
+  const state = reactive<RedisServerInfo>({
+    last_save: "",
+    info: {}
   });
 
   onMounted(() => {
