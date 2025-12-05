@@ -4,11 +4,12 @@ import time
 from fastapi import FastAPI
 from fastapi.params import Body, Query
 from starlette.middleware.cors import CORSMiddleware
-from starlette.websockets import WebSocket
+from starlette.websockets import WebSocket, WebSocketDisconnect
+from websockets import ConnectionClosed
 
 from config import config
 from redis_service import RedisService
-from utils import dump_json, load_json
+from utils import dump_json
 
 logger = logging.getLogger(__name__)
 
@@ -75,27 +76,30 @@ async def delete_entries(server: str = Query(), database: int = Query(), keys: l
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     while True:
-        data = await websocket.receive_text()
-
-        timestamp = time.time()
-        event = "@"
-
         try:
-            if not isinstance(data, str):
-                await websocket.send_text(dump_json({"error": "Invalid message format"}))
-
-            message = load_json(data)
-
-            if isinstance(message, dict):
-                event = message['action']
-                if message['action'] == 'server:entries':
-                    result = await get_entries(**message['payload'])
-                    await websocket.send_text(dump_json({'id': message['id'], 'data': result}))
-                else:
-                    await websocket.send_text(dump_json({'id': message['id'], 'error': 'Invalid action'}))
-            else:
-                await websocket.send_text(dump_json({'error': 'Invalid message format'}))
+            data = await websocket.receive_json()
+            await handle_message(websocket, data)
+        except (ConnectionClosed, WebSocketDisconnect):
+            break
         except Exception as e:
-            await websocket.send_text(dump_json({"error": str(e)}))
+            logger.error(f"Failed to process WS message: {e}")
 
-        logger.info(f"WS {event} [{time.time() - timestamp:.3f}s]")
+
+async def handle_message(websocket: WebSocket, data: dict):
+    timestamp = time.time()
+    event = "@"
+
+    if isinstance(data, dict):
+        event = data['action']
+        if data['action'] == 'server:entries':
+            result = await get_entries(**data['payload'])
+            await websocket.send_text(dump_json({'id': data['id'], 'data': result}))
+        elif data['action'] == 'server:entry':
+            result = await get_entry(**data['payload'])
+            await websocket.send_text(dump_json({'id': data['id'], 'data': result}))
+        else:
+            await websocket.send_text(dump_json({'id': data['id'], 'error': 'Invalid action'}))
+    else:
+        await websocket.send_text(dump_json({'error': 'Invalid message format'}))
+
+    logger.info(f"WS {event} [{time.time() - timestamp:.3f}s]")

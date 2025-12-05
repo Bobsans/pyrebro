@@ -32,13 +32,15 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, reactive } from "vue";
+  import { computed, onBeforeUnmount, onMounted, reactive, watch } from "vue";
   import { store } from "@/store.ts";
   import { useApi } from "@/uses/api.ts";
   import { useRoute } from "vue-router";
   import type { RedisEntryData } from "@/types.ts";
+  import { useWebsocket } from "@/uses/websocket.ts";
 
   const api = useApi();
+  const ws = useWebsocket();
   const route = useRoute();
 
   const key = computed(() => route.params.key as string);
@@ -54,6 +56,30 @@
       return Array.isArray(state.data) ? state.data.length : typeof state.data === "object" ? Object.keys(state.data as Record<any, any>).length : 0;
     }
     return 0;
+  });
+
+  let _updateHandle: number | null = null;
+  watch(() => store.state.updateInterval, (nv, ov) => {
+    if (nv && nv !== ov) {
+      if (_updateHandle) {
+        clearInterval(_updateHandle);
+      }
+      if (nv > 0) {
+        _updateHandle = setInterval(() => ws.request<RedisEntryData>("server:entry", {
+          server: store.state.server,
+          database: store.state.database,
+          key: key.value
+        }).then((data) => {
+          Object.assign(state, data);
+        }), nv);
+      }
+    }
+  }, { immediate: true });
+
+  onBeforeUnmount(() => {
+    if (_updateHandle) {
+      clearInterval(_updateHandle);
+    }
   });
 
   onMounted(() => {

@@ -9,15 +9,19 @@ from models import RedisEntry, RedisEntryData, RedisServerInfo
 
 
 class RedisService:
-    redis: Redis = None
+    connections_cache: dict[str, Redis] = {}
 
     @classmethod
     @asynccontextmanager
     async def connect(cls, server: str, database: int = 0) -> AsyncGenerator[Redis]:
         if options := [it for it in config.servers if it.name == server]:
-            if cls.redis is None:
-                cls.redis = Redis(host=options[0].host, port=options[0].port, db=database, password=options[0].password, decode_responses=True, retry_on_error=[RedisError], retry_on_timeout=True)
-            yield cls.redis
+            key = f"{server}:{database}"
+
+            if not (redis := cls.connections_cache.get(key)):
+                redis = Redis(host=options[0].host, port=options[0].port, db=database, password=options[0].password, decode_responses=True, retry_on_error=[RedisError], retry_on_timeout=True)
+                cls.connections_cache[key] = redis
+
+            yield redis
         else:
             raise ValueError('Server not found')
 
@@ -64,6 +68,8 @@ class RedisService:
                 if size > 1000:
                     return RedisEntryData(type=value_type, data=await redis.xrange(key, '-', '+', count=1000), size=size)
                 return RedisEntryData(type=value_type, data=await redis.xrange(key, '-', '+'), size=size)
+            if value_type == 'none':
+                return RedisEntryData(type=value_type, data=None, size=0)
             raise ValueError(f'Unsupported type: {value_type}')
 
     @classmethod
