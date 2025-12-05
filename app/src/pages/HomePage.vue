@@ -37,12 +37,14 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, reactive, watch } from "vue";
+  import { computed, onBeforeUnmount, reactive, watch } from "vue";
   import { store } from "@/store";
   import { useApi } from "@/uses/api";
   import type { RedisEntry } from "@/types";
+  import { useWebsocket } from "@/uses/websocket";
 
   const api = useApi();
+  const ws = useWebsocket();
 
   const state = reactive({
     items: [] as RedisEntry[],
@@ -87,9 +89,34 @@
     api.endpoints.deleteKeys(store.state.server, store.state.database, state.selected).then(() => load());
   };
 
-  watch(() => [store.state.server, store.state.database], async () => {
+  watch(() => [store.state.server, store.state.database], () => {
     load();
   }, { immediate: true });
+
+  let _updateHandle: number | null = null;
+  watch(() => store.state.updateInterval, (nv, ov) => {
+    if (nv && nv !== ov) {
+      if (_updateHandle) {
+        clearInterval(_updateHandle);
+      }
+      if (nv > 0) {
+        _updateHandle = setInterval(() => ws.request<RedisEntry[]>("server:entries", {
+          server: store.state.server,
+          database: store.state.database,
+          pattern: state.pattern,
+          sort: state.sort
+        }).then((data) => {
+          state.items = data;
+        }), nv);
+      }
+    }
+  }, { immediate: true });
+
+  onBeforeUnmount(() => {
+    if (_updateHandle) {
+      clearInterval(_updateHandle);
+    }
+  });
 </script>
 
 <style lang="scss">

@@ -2,24 +2,22 @@ import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from redis.asyncio import Redis
+from redis.asyncio import Redis, RedisError
 
 from config import BASE_PATH, config
 from models import RedisEntry, RedisEntryData, RedisServerInfo
 
 
 class RedisService:
-    @staticmethod
+    redis: Redis = None
+
+    @classmethod
     @asynccontextmanager
-    async def connect(server: str, database: int = 0) -> AsyncGenerator[Redis]:
+    async def connect(cls, server: str, database: int = 0) -> AsyncGenerator[Redis]:
         if options := [it for it in config.servers if it.name == server]:
-            redis: Redis | None = None
-            try:
-                redis = Redis(host=options[0].host, port=options[0].port, db=database, password=options[0].password, decode_responses=True)
-                yield redis
-            finally:
-                if redis is not None:
-                    await redis.close()
+            if cls.redis is None:
+                cls.redis = Redis(host=options[0].host, port=options[0].port, db=database, password=options[0].password, decode_responses=True, retry_on_error=[RedisError], retry_on_timeout=True)
+            yield cls.redis
         else:
             raise ValueError('Server not found')
 

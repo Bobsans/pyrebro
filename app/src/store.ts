@@ -2,7 +2,8 @@ import { reactive, watch } from "vue";
 
 const state = reactive({
   server: null! as string,
-  database: 0
+  database: 0,
+  updateInterval: -1
 });
 
 const savedState = localStorage.getItem("state");

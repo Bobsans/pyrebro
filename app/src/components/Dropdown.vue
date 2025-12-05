@@ -1,7 +1,7 @@
 <template>
   <div class="dropdown" @click.prevent="onClick">
     <div class="value">
-      <slot name="value" :value="model">{{ model }}</slot>
+      <slot name="value" :item="selected">{{ model }}</slot>
     </div>
     <ul class="list" :class="{ 'open': state.open }">
       <li v-for="(item, i) in items" :key="i" @click="onClickItem(item)">
@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts" generic="V, TO">
-  import { reactive, watch } from "vue";
+  import { computed, reactive } from "vue";
   import { useClickOutside } from "@/uses/click-outside.ts";
 
   const props = withDefaults(defineProps<{
@@ -28,9 +28,17 @@
 
   const model = defineModel<V>();
 
+  const selected = computed(() => {
+    for (const item of props.items ?? []) {
+      if (props.toValue(item) === model.value) {
+        return item;
+      }
+    }
+    return null;
+  });
+
   const state = reactive({
-    open: false,
-    selected: null as TO | null
+    open: false
   });
 
   const onClick = () => {
@@ -44,17 +52,6 @@
 
   useClickOutside(() => {
     state.open = false;
-  });
-
-  watch(() => [model.value, props.items], ([ov, oi], [nv, ni]) => {
-    if ((nv && nv !== ov) || (ni && ni !== oi)) {
-      for (const item of props.items ?? []) {
-        if (props.toValue(item) === model.value) {
-          state.selected = item as never;
-          break;
-        }
-      }
-    }
   });
 </script>
 

@@ -1,4 +1,5 @@
 import logging
+import time
 
 from fastapi import FastAPI
 from fastapi.params import Body, Query
@@ -7,6 +8,7 @@ from starlette.websockets import WebSocket
 
 from config import config
 from redis_service import RedisService
+from utils import dump_json, load_json
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +53,7 @@ async def get_entries(server: str = Query(), database: int = Query(), pattern: s
 
 
 @app.get("/server/entry")
-async def get_entries(server: str = Query(), database: int = Query(), key: str = Query()):
+async def get_entry(server: str = Query(), database: int = Query(), key: str = Query()):
     try:
         return await RedisService.get_entry_data(server, database, key)
     except Exception as e:
@@ -74,4 +76,26 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     while True:
         data = await websocket.receive_text()
-        await websocket.send_text(f"Message text was: {data}")
+
+        timestamp = time.time()
+        event = "@"
+
+        try:
+            if not isinstance(data, str):
+                await websocket.send_text(dump_json({"error": "Invalid message format"}))
+
+            message = load_json(data)
+
+            if isinstance(message, dict):
+                event = message['action']
+                if message['action'] == 'server:entries':
+                    result = await get_entries(**message['payload'])
+                    await websocket.send_text(dump_json({'id': message['id'], 'data': result}))
+                else:
+                    await websocket.send_text(dump_json({'id': message['id'], 'error': 'Invalid action'}))
+            else:
+                await websocket.send_text(dump_json({'error': 'Invalid message format'}))
+        except Exception as e:
+            await websocket.send_text(dump_json({"error": str(e)}))
+
+        logger.info(f"WS {event} [{time.time() - timestamp:.3f}s]")
