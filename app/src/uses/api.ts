@@ -4,6 +4,11 @@ export const API_SERVER_URL = import.meta.env.API_SERVER_URL;
 
 export type HttpMethod = "get" | "post" | "put" | "patch" | "delete" | "head" | "options" | "trace" | "connect";
 
+export interface EntriesPage {
+  items: RedisEntry[];
+  has_more: boolean;
+}
+
 export const useApi = () => {
   const buildUrl = (path: string) => `${API_SERVER_URL.replace(/\/$/g, "")}/${path.replace(/^\//g, "")}`;
 
@@ -18,7 +23,10 @@ export const useApi = () => {
   const getServers = () => request<string[]>("get", "/servers");
   const getServerInfo = (server: string) => request<RedisServerInfo>("get", `/server/info?server=${server}`);
   const getDatabases = (server: string) => request<string[]>("get", `/server/databases?server=${server}`);
-  const getEntries = (server: string, database: number, pattern: string, sort: string) => request<RedisEntry[]>("get", `/server/entries?server=${server}&database=${database}&pattern=${pattern}&sort=${sort}`);
+  const getEntries = (server: string, database: number, pattern: string, sort: string, offset = 0) => {
+    const query = new URLSearchParams({ server, database: String(database), pattern, sort, offset: String(offset), limit: "500" });
+    return request<EntriesPage>("get", `/server/entries?${query}`);
+  };
   const getData = (server: string, database: number, key: string) => request<RedisEntryData>("get", `/server/entry?server=${server}&database=${database}&key=${key}`);
   const deleteKeys = (server: string, database: number, keys: string[]) => request<boolean>("delete", `/server/entries?server=${server}&database=${database}`, {
     headers: { "Content-Type": "application/json" },

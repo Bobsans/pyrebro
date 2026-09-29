@@ -1,5 +1,6 @@
 import logging
 import time
+from typing import Annotated
 
 from fastapi import FastAPI
 from fastapi.params import Body, Query
@@ -43,13 +44,25 @@ async def get_databases(server: str = Query()):
 
 
 @app.get("/server/entries")
-async def get_entries(server: str = Query(), database: int = Query(), pattern: str = Query('*'), sort: str = Query("key:asc")):
+async def get_entries(
+    server: str = Query(), database: int = Query(), pattern: str = '*', sort: str = "key:asc",
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=500)] = 500,
+):
     try:
-        entries = await RedisService.get_entries(server, database, pattern)
+        # WebSocket calls bypass FastAPI's query validation.
+        if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 500:
+            raise ValueError('Invalid pagination')
         sort_field, sort_dir = sort.split(':')
-        return sorted(entries, key=lambda it: getattr(it, sort_field), reverse=sort_dir == 'desc')
+        if sort_field not in ('key', 'type', 'ttl', 'size') or sort_dir not in ('asc', 'desc'):
+            raise ValueError('Invalid sort')
+        entries = await RedisService.get_entries(server, database, pattern)
+        # ponytail: global sorting requires a full scan; use snapshots if scan cost becomes an issue.
+        entries = list({entry.key: entry for entry in entries}.values())
+        entries.sort(key=lambda it: (getattr(it, sort_field), it.key), reverse=sort_dir == 'desc')
+        return {'items': entries[offset:offset + limit], 'has_more': offset + limit < len(entries)}
     except Exception as e:
-        logger.exception(e, "Failed to get entries")
+        logger.exception("Failed to get entries")
         return {'error': str(e)}
 
 

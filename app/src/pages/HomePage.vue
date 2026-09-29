@@ -33,13 +33,20 @@
         </tr>
       </tbody>
     </table>
+    <div ref="loadTrigger" role="status" aria-live="polite">
+      <span v-if="state.loading">Loading…</span>
+      <template v-else-if="state.error">
+        {{ state.error }} <button @click="loadMore(retryRefresh)">Retry</button>
+      </template>
+      <span v-else-if="!state.hasMore">All keys loaded ({{ state.items.length }})</span>
+    </div>
   </main>
 </template>
 
 <script setup lang="ts">
-  import { computed, onBeforeUnmount, reactive, watch } from "vue";
+  import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
   import { store } from "@/store";
-  import { useApi } from "@/uses/api";
+  import { useApi, type EntriesPage } from "@/uses/api";
   import type { RedisEntry } from "@/types";
   import { useWebsocket } from "@/uses/websocket";
 
@@ -50,11 +57,21 @@
     items: [] as RedisEntry[],
     selected: [] as string[],
     pattern: "*",
-    sort: "key:asc"
+    sort: "key:asc",
+    loading: false,
+    hasMore: true,
+    error: ""
   });
 
+  const loadTrigger = ref<HTMLElement | null>(null);
+  let observer: IntersectionObserver | null = null;
+  let generation = 0;
+  let offset = 0;
+  let appliedPattern = state.pattern;
+  let retryRefresh = false;
+
   const allSelected = computed({
-    get: () => state.items.length === state.selected.length,
+    get: () => state.items.length > 0 && state.items.length === state.selected.length,
     set: (value) => {
       if (value) {
         state.selected = state.items.map(it => it.key);
@@ -79,10 +96,71 @@
     "desc": state.sort === `${field}:desc`
   });
 
+  const readPage = async (pageOffset: number, refresh: boolean): Promise<EntriesPage> => {
+    const page = refresh
+      ? await ws.request<EntriesPage>("server:entries", {
+        server: store.state.server, database: store.state.database,
+        pattern: appliedPattern, sort: state.sort, offset: pageOffset, limit: 500
+      })
+      : await api.endpoints.getEntries(store.state.server, store.state.database, appliedPattern, state.sort, pageOffset)
+        .then(({ response, data }) => {
+          if (!response.ok) throw new Error("Failed to load keys.");
+          return data;
+        });
+    if (!Array.isArray(page?.items) || typeof page.has_more !== "boolean") {
+      throw new Error("Failed to load keys.");
+    }
+    return page;
+  };
+
+  const loadMore = async (refresh = false) => {
+    if (state.loading || !store.state.server || (!refresh && !state.hasMore)) return;
+    const currentGeneration = generation;
+    state.loading = true;
+    state.error = "";
+    try {
+      const items = refresh ? [] : [...state.items];
+      let nextOffset = refresh ? 0 : offset;
+      const target = refresh ? Math.max(offset, 500) : offset + 500;
+      let page: EntriesPage;
+      do {
+        page = await readPage(nextOffset, refresh);
+        if (currentGeneration !== generation) return;
+        items.push(...page.items);
+        nextOffset += page.items.length;
+      } while (refresh && page.has_more && page.items.length > 0 && nextOffset < target);
+      state.items = [...new Map(items.map(item => [item.key, item])).values()];
+      offset = nextOffset;
+      state.hasMore = page.has_more;
+      const keys = new Set(state.items.map(item => item.key));
+      state.selected = state.selected.filter(key => keys.has(key));
+    } catch {
+      if (currentGeneration === generation) {
+        retryRefresh = refresh;
+        state.error = "Failed to load keys.";
+      }
+    } finally {
+      if (currentGeneration === generation) {
+        state.loading = false;
+        await nextTick();
+        if (currentGeneration === generation && !state.error && state.hasMore &&
+          loadTrigger.value && loadTrigger.value.getBoundingClientRect().top <= window.innerHeight + 200) {
+          void loadMore();
+        }
+      }
+    }
+  };
+
   const load = () => {
-    api.endpoints.getEntries(store.state.server, store.state.database, state.pattern, state.sort).then(({ data }) => {
-      state.items = data;
-    });
+    generation++;
+    offset = 0;
+    appliedPattern = state.pattern;
+    state.items = [];
+    state.selected = [];
+    state.hasMore = true;
+    state.loading = false;
+    state.error = "";
+    void loadMore();
   };
 
   const deleteSelected = () => {
@@ -94,25 +172,23 @@
   }, { immediate: true });
 
   let _updateHandle: number | null = null;
-  watch(() => store.state.updateInterval, (nv, ov) => {
-    if (nv && nv !== ov) {
-      if (_updateHandle) {
-        clearInterval(_updateHandle);
-      }
-      if (nv > 0) {
-        _updateHandle = setInterval(() => ws.request<RedisEntry[]>("server:entries", {
-          server: store.state.server,
-          database: store.state.database,
-          pattern: state.pattern,
-          sort: state.sort
-        }).then((data) => {
-          state.items = data;
-        }), nv);
-      }
-    }
+  watch(() => store.state.updateInterval, (interval) => {
+    if (_updateHandle !== null) clearInterval(_updateHandle);
+    _updateHandle = interval > 0 ? window.setInterval(() => {
+      if (!state.error) void loadMore(true);
+    }, interval) : null;
   }, { immediate: true });
 
+  onMounted(() => {
+    observer = new IntersectionObserver(([entry]) => {
+      if (entry?.isIntersecting && !state.error) void loadMore();
+    }, { rootMargin: "200px" });
+    if (loadTrigger.value) observer.observe(loadTrigger.value);
+  });
+
   onBeforeUnmount(() => {
+    generation++;
+    observer?.disconnect();
     if (_updateHandle) {
       clearInterval(_updateHandle);
     }
